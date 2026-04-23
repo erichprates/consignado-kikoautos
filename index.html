@@ -1850,22 +1850,38 @@
     const mqMobile = window.matchMedia('(max-width: 760px)');
     if (mqMobile.matches) return;
     const section = document.getElementById('hero');
+    const factors = Array.from(cells).map(c => parseFloat(c.dataset.factor) || 0);
+    let heroTop = 0;
+    let heroBottom = 0;
     let rafId = null;
+    let resizeTimer = null;
+    function recalcBounds(){
+      heroTop = section.offsetTop;
+      heroBottom = heroTop + section.offsetHeight;
+    }
     function update() {
       rafId = null;
-      const rect = section.getBoundingClientRect();
-      const scrolled = Math.max(0, -rect.top);
-      cells.forEach(cell => {
-        const f = parseFloat(cell.dataset.factor) || 0;
-        cell.style.transform = 'translate3d(0,' + (-scrolled * f) + 'px,0)';
-      });
+      const y = window.scrollY;
+      if (y > heroBottom) return;
+      const scrolled = Math.max(0, y - heroTop);
+      for (let i = 0; i < cells.length; i++) {
+        cells[i].style.transform = 'translate3d(0,' + (-scrolled * factors[i]) + 'px,0)';
+      }
     }
     function onScroll() {
       if (rafId) return;
       rafId = requestAnimationFrame(update);
     }
+    function onResize() {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => { recalcBounds(); onScroll(); }, 120);
+    }
     window.addEventListener('scroll', onScroll, { passive: true });
-    update();
+    window.addEventListener('resize', onResize);
+    window.addEventListener('load', () => {
+      if ('requestIdleCallback' in window) requestIdleCallback(() => { recalcBounds(); onScroll(); }, { timeout: 500 });
+      else setTimeout(() => { recalcBounds(); onScroll(); }, 0);
+    });
   })();
 
   /* ---------- Objection reveal ---------- */
