@@ -570,15 +570,22 @@
     /* === Hero === */
     .hero { padding: 1rem 0 6rem; min-height: 620px; }
     .hero-bg { background-attachment: scroll !important; background-position: center top; }
-    .hero-topbar { padding-bottom: 1rem; margin-bottom: 0.5rem; }
-    .hero-content { padding-top: 1.5rem; padding-bottom: 2rem; }
-    .hero-h1 { font-size: clamp(34px, 9vw, 48px) !important; line-height: 1.04; min-height: 5em !important; }
-    .hero-sub { font-size: 14px !important; margin-top: 0.5rem !important; }
-    .hero-ctas { margin-top: 1rem !important; gap: 0.5rem; flex-wrap: wrap; }
-    .hero-ctas .btn { justify-content: center; }
-    .hero-ctas .btn-red { flex: 1 1 100%; padding: 16px 22px; font-size: 15px; }
-    .hero-ctas .btn-ghost { flex: 1 1 100%; justify-content: center; padding: 14px 20px; }
-    .hero-dots { margin-top: 1rem !important; }
+    .hero-topbar {
+      display: block !important;
+      text-align: center !important;
+      padding-bottom: 1.25rem;
+      margin-bottom: 2rem;
+    }
+    .hero-topbar .pill { display: none !important; }
+    #heroLogo { display: inline-block !important; margin: 0 auto !important; }
+    .hero-content { padding-top: 2rem; padding-bottom: 2rem; text-align: center !important; align-items: center; }
+    .hero-content > * { text-align: center !important; }
+    .hero-kicker, #heroKicker { justify-content: center !important; }
+    .hero-h1 { font-size: clamp(34px, 9vw, 48px) !important; line-height: 1.08; min-height: 5em !important; text-align: center !important; }
+    .hero-sub { font-size: 14px !important; margin-top: 1rem !important; text-align: center !important; }
+    .hero-ctas { display: none !important; }
+    .hero-dots { margin-top: 1.5rem !important; justify-content: center !important; }
+    .hero-dots > div { justify-content: center; margin: 0 auto; }
     .hero-anchor {
       grid-template-columns: 1fr 1fr !important;
       gap: 0 !important;
@@ -595,6 +602,14 @@
     .hero-anchor-cell .label { font-size: 9px !important; letter-spacing: 0.1em; margin-bottom: 6px !important; }
     .hero-anchor-cell .num { font-size: 32px !important; margin-bottom: 4px !important; }
     .hero-anchor-cell .sub { font-size: 11px !important; }
+
+    /* === Títulos de seção centralizados === */
+    .section .kicker,
+    .section .reveal-up .kicker { display: flex !important; justify-content: center; }
+    .section h2 { text-align: center !important; margin-left: auto !important; margin-right: auto !important; }
+    .section h2 + p,
+    .section .reveal-up > p { text-align: center !important; margin-left: auto !important; margin-right: auto !important; }
+    .section .reveal-up { text-align: center; }
 
     /* === Objeção === */
     .obj-grid { grid-template-columns: 1fr !important; gap: 0.75rem; }
@@ -672,7 +687,14 @@
 
     /* === Form === */
     .form-split { grid-template-columns: 1fr !important; border-radius: 16px; }
-    .form-left { min-height: 200px !important; padding: 2rem 1.5rem !important; }
+    .form-left {
+      min-height: 280px !important;
+      padding: 2rem 1.5rem !important;
+      background-image: url('assets/form.webp') !important;
+      background-size: cover !important;
+      background-position: center center !important;
+      background-repeat: no-repeat !important;
+    }
     .form-right { padding: 2rem 1.5rem !important; }
     .form-right h3 { font-size: 20px !important; margin-bottom: 1.5rem !important; }
     .form-split form > div[style*="grid-template-columns:1fr 1fr"],
