@@ -12,13 +12,13 @@ Thumbs.db
 .idea/
 .vscode/
 
-# Originais / rascunhos soltos no diretório
-Background.png
-DSC*.png
-fundotopo.webp
-logokikoautos.svg
-form.webp
-foto_datascomemorativas.webp
-foto_eventos.jpg
-foto_private.webp
-foto_workshop.webp
+# Originais / rascunhos soltos no diretório (apenas root — não afeta assets/)
+/Background.png
+/DSC*.png
+/fundotopo.webp
+/logokikoautos.svg
+/form.webp
+/foto_datascomemorativas.webp
+/foto_eventos.jpg
+/foto_private.webp
+/foto_workshop.webp
