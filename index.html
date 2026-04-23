@@ -16,8 +16,8 @@
     --ink: #0A0A0A;
     --ink-2: #2A2A2A;
     --ink-3: #4A4A4A;
-    --ink-4: #6B6B6B;
-    --ink-5: #9B9B9B;
+    --ink-4: #595959;
+    --ink-5: #767676;
     --ink-6: #C8C8C8;
     --red: #A01818;
     --red-deep: #7C1414;
@@ -269,6 +269,12 @@
     background: rgba(255,255,255,0.2);
     transition: all 300ms ease;
     cursor: pointer; padding: 0; border: 0;
+    position: relative;
+  }
+  .hero-dot-btn::after {
+    content: ''; position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%; min-width: 24px; height: 24px;
   }
   .hero-dot-btn.active { background: var(--red); }
 
@@ -1253,7 +1259,7 @@
             </div>
             <div class="mono" style="font-size:10px;letter-spacing:0.12em;color:var(--red);background:rgba(160,24,24,0.08);padding:4px 10px;border-radius:999px;font-weight:500;white-space:nowrap;">← ARRASTE →</div>
           </div>
-          <input id="compSlider" type="range" min="30000" max="500000" step="5000" value="100000" class="sim-slider" style="width:100%;--pct:14.9%;" />
+          <input id="compSlider" type="range" min="30000" max="500000" step="5000" value="100000" class="sim-slider" style="width:100%;--pct:14.9%;" aria-label="Valor do seu carro (simulador)" />
           <div style="display:flex;justify-content:space-between;margin-top:6px;">
             <span class="mono" style="font-size:9px;color:var(--ink-5);letter-spacing:0.1em;">R$ 30k</span>
             <span class="mono" style="font-size:9px;color:var(--ink-5);letter-spacing:0.1em;">R$ 500k</span>
@@ -1529,17 +1535,17 @@
         <h3 style="font-size:24px;font-weight:500;letter-spacing:-0.015em;margin-bottom:2rem;color:var(--ink);line-height:1.2;">Preencha com os dados do seu veículo:</h3>
         <form id="leadForm" novalidate>
           <div class="grid-2-mobile" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem;">
-            <div><label class="form-label">Nome completo</label><input name="nome" class="form-input" autocomplete="name" required /></div>
-            <div><label class="form-label">WhatsApp</label><input name="whatsapp" type="tel" inputmode="tel" autocomplete="tel" class="form-input" placeholder="(12) 9____-____" required /></div>
+            <div><label class="form-label" for="lf-nome">Nome completo</label><input id="lf-nome" name="nome" class="form-input" autocomplete="name" required /></div>
+            <div><label class="form-label" for="lf-whatsapp">WhatsApp</label><input id="lf-whatsapp" name="whatsapp" type="tel" inputmode="tel" autocomplete="tel" class="form-input" placeholder="(12) 9____-____" required /></div>
           </div>
           <div class="grid-2-mobile" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem;">
-            <div><label class="form-label">Marca</label><input name="marca" class="form-input" autocomplete="off" required /></div>
-            <div><label class="form-label">Modelo</label><input name="modelo" class="form-input" autocomplete="off" required /></div>
+            <div><label class="form-label" for="lf-marca">Marca</label><input id="lf-marca" name="marca" class="form-input" autocomplete="off" required /></div>
+            <div><label class="form-label" for="lf-modelo">Modelo</label><input id="lf-modelo" name="modelo" class="form-input" autocomplete="off" required /></div>
           </div>
           <div class="grid-2-mobile" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1.5rem;">
-            <div><label class="form-label">Ano</label><input name="ano" type="number" inputmode="numeric" class="form-input" /></div>
-            <div><label class="form-label">Quilometragem</label><input name="km" inputmode="numeric" class="form-input" /></div>
-            <div><label class="form-label">Preço sugerido (R$)</label><input name="preco" inputmode="numeric" class="form-input" /></div>
+            <div><label class="form-label" for="lf-ano">Ano</label><input id="lf-ano" name="ano" type="number" inputmode="numeric" class="form-input" /></div>
+            <div><label class="form-label" for="lf-km">Quilometragem</label><input id="lf-km" name="km" inputmode="numeric" class="form-input" /></div>
+            <div><label class="form-label" for="lf-preco">Preço sugerido (R$)</label><input id="lf-preco" name="preco" inputmode="numeric" class="form-input" /></div>
           </div>
           <div id="fitWarning" style="display:none;padding:14px 16px;background:rgba(160,24,24,0.06);border:1px solid rgba(160,24,24,0.2);border-radius:10px;font-size:13px;color:var(--red);margin-bottom:1.5rem;">
             <strong style="font-weight:500;">Atenção:</strong> Nosso padrão atual é 2020 ou mais novo, até 40.000 km. Mesmo assim, podemos conversar — clica em enviar que a gente retorna.
