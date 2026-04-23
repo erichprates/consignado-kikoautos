@@ -1594,15 +1594,24 @@
   /* ---------- Scroll progress ---------- */
   (function(){
     const bar = document.getElementById('scrollProgress');
-    function update(){
-      const h = document.documentElement;
-      const total = (h.scrollHeight - h.clientHeight) || 1;
+    const h = document.documentElement;
+    let total = 1;
+    let ticking = false;
+    function recalc(){ total = (h.scrollHeight - h.clientHeight) || 1; }
+    function paint(){
+      ticking = false;
       const pct = Math.max(0, Math.min(1, h.scrollTop / total));
       bar.style.transform = 'scaleX(' + pct + ')';
     }
-    window.addEventListener('scroll', update, { passive: true });
-    window.addEventListener('resize', update);
-    update();
+    function onScroll(){
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(paint);
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', () => { recalc(); onScroll(); });
+    window.addEventListener('load', recalc);
+    recalc(); paint();
   })();
 
   /* ---------- Logo (inline fetched SVG for recoloring) ---------- */
