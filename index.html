@@ -225,7 +225,7 @@
   .hero-bg {
     position: absolute; inset: 0;
     background-image: url('assets/hero-fundotopo.webp');
-    background-size: cover; background-position: center center;
+    background-size: cover; background-position: 0% center;
     background-attachment: fixed;
     filter: contrast(1.02);
   }
@@ -2202,7 +2202,7 @@
           '<div class="pill pill-red" style="margin-bottom:1.5rem;"><span class="dot"></span>RECEBIDO</div>' +
           '<h2 style="color:#fff;margin-bottom:1rem;">Obrigado, <span class="serif" style="color:' + KIKO_RED + ';">' + nome.replace(/[<>]/g,'') + '</span>.</h2>' +
           '<p style="color:rgba(255,255,255,0.75);font-size:16px;max-width:440px;margin:0 auto 2rem;">A gente responde no WhatsApp ' + whatsapp.replace(/[<>]/g,'') + ' em até 24h. Sem ligação comercial, sem pressão.</p>' +
-          '<button id="formReset" class="btn btn-outline">Enviar outro carro</button>' +
+          '<button id="formReset" class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,0.6);background:transparent;" onmouseover="this.style.background=\'#fff\';this.style.color=\'#0A0A0A\';" onmouseout="this.style.background=\'transparent\';this.style.color=\'#fff\';">Enviar outro carro</button>' +
         '</div></div>';
       const reset = document.getElementById('formReset');
       if (reset) reset.addEventListener('click', () => window.location.reload());
