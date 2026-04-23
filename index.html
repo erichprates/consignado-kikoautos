@@ -7,7 +7,10 @@
 <meta name="description" content="Venda seu carro com a KikoAutos. Você define o preço, a gente cuida do resto. Sem custo antecipado. 53% vendem em até 15 dias." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Archivo:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="preload" as="image" href="assets/hero-fundotopo.webp" fetchpriority="high" />
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Archivo:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Archivo:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'" />
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Archivo:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" /></noscript>
 <style>
   :root {
     --white: #FFFFFF;
@@ -1070,7 +1073,7 @@
     <div class="vitrine-grid grid-2-mobile">
       <div class="vitrine-card" data-idx="0">
         <div class="vitrine-photo">
-          <div class="vitrine-photo-img" style="background-image:url('assets/foto-eventos.jpg');"></div>
+          <div class="vitrine-photo-img" style="background-image:url('assets/foto-eventos.webp');"></div>
           <div class="vitrine-photo-overlay"></div>
         </div>
         <div>
@@ -1125,11 +1128,11 @@
           &ldquo;O veículo entra tratado como <span class="serif" style="color:rgb(180,5,5);">nosso</span>. Mesma preparação, mesmo estúdio, mesma força de marketing.&rdquo;
         </p>
         <div class="canais-photo" id="canaisPhoto">
-          <div class="canais-photo-slide active" style="background-image:url('assets/tratamento-01.png');"></div>
-          <div class="canais-photo-slide" style="background-image:url('assets/tratamento-05.png');"></div>
-          <div class="canais-photo-slide" style="background-image:url('assets/tratamento-02.png');"></div>
-          <div class="canais-photo-slide" style="background-image:url('assets/tratamento-03.png');"></div>
-          <div class="canais-photo-slide" style="background-image:url('assets/tratamento-04.png');"></div>
+          <div class="canais-photo-slide active" style="background-image:url('assets/tratamento-01.webp');"></div>
+          <div class="canais-photo-slide" style="background-image:url('assets/tratamento-05.webp');"></div>
+          <div class="canais-photo-slide" style="background-image:url('assets/tratamento-02.webp');"></div>
+          <div class="canais-photo-slide" style="background-image:url('assets/tratamento-03.webp');"></div>
+          <div class="canais-photo-slide" style="background-image:url('assets/tratamento-04.webp');"></div>
         </div>
       </div>
 
@@ -1517,7 +1520,7 @@
   <div class="wrap" id="formWrap">
     <div class="form-split reveal-scale">
       <div class="form-left">
-        <img src="assets/form.webp" alt="" class="form-left-bg" aria-hidden="true" />
+        <img src="assets/form.webp" alt="" class="form-left-bg" aria-hidden="true" loading="lazy" decoding="async" />
         <div class="form-left-overlay"></div>
         <div style="position:relative;color:#fff;z-index:2;">
           <div class="kicker" style="margin-bottom:1.25rem;">
