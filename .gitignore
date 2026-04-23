@@ -1,0 +1,24 @@
+# Handoff bundle from Claude Design — not part of the production site
+Kikoautos-handoff/
+Kikoautos-handoff.zip
+
+# Temporary probe files used during development
+probe.html
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Originais / rascunhos soltos no diretório
+Background.png
+DSC*.png
+fundotopo.webp
+logokikoautos.svg
+form.webp
+foto_datascomemorativas.webp
+foto_eventos.jpg
+foto_private.webp
+foto_workshop.webp
