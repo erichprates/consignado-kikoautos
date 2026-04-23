@@ -1597,6 +1597,7 @@
     const h = document.documentElement;
     let total = 1;
     let ticking = false;
+    let resizeTimer = null;
     function recalc(){ total = (h.scrollHeight - h.clientHeight) || 1; }
     function paint(){
       ticking = false;
@@ -1608,10 +1609,17 @@
       ticking = true;
       requestAnimationFrame(paint);
     }
+    function onResize(){
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => { recalc(); onScroll(); }, 120);
+    }
+    const deferredInit = () => { recalc(); paint(); };
     window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', () => { recalc(); onScroll(); });
-    window.addEventListener('load', recalc);
-    recalc(); paint();
+    window.addEventListener('resize', onResize);
+    window.addEventListener('load', () => {
+      if ('requestIdleCallback' in window) requestIdleCallback(deferredInit, { timeout: 500 });
+      else setTimeout(deferredInit, 0);
+    });
   })();
 
   /* ---------- Logo (inline fetched SVG for recoloring) ---------- */
