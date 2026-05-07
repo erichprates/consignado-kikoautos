@@ -720,10 +720,14 @@
     .vitrine-photo { aspect-ratio: 1/1 !important; }
 
     /* === Canais === */
-    .canais-grid { grid-template-columns: 1fr !important; gap: 0.75rem; }
-    .canais-card { padding: 1.25rem !important; }
-    .canais-card.dark { grid-column: 1 / -1 !important; }
-    .canais-card .mono.clabel { font-size: 9px !important; }
+    /* 1 coluna no mobile: todos os cards full-width igual ao Best Friends */
+    .canais-grid { grid-template-columns: minmax(0, 1fr) !important; gap: 0.75rem; }
+    .canais-card { padding: 1.25rem !important; min-width: 0; }
+    /* Anula qualquer span (inline ou de classe) pra ninguém criar coluna implícita */
+    .canais-card,
+    .canais-card.dark,
+    .canais-card[style*="grid-column"] { grid-column: 1 / 2 !important; }
+    .canais-card .mono.clabel { font-size: 9px !important; line-height: 1.35; overflow-wrap: anywhere; }
     .canais-photo { margin-top: 1.5rem !important; }
     /* Site Kikoautos: mesma largura do card Best Friends, sparkline empilhado embaixo */
     .canais-card.dark > div:nth-child(2) {
