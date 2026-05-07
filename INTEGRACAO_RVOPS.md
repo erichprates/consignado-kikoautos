@@ -1,32 +1,49 @@
-# Integração formulário → RVops (LP consignação de CARRO)
+# Integração formulário → RVops (LP venda/consignação de CARRO)
 
 Documento de referência pra rodar a integração local, fazer o deploy e validar
 o fluxo no RVops.
 
-> **Escopo**: esta LP é específica para consignação de CARRO. A futura LP de MOTO
-> será um **deploy separado**, com seu próprio `RVOPS_LP_ORIGEM` (`lp-consignacao-moto-kikoautos`).
-> O `lp_origem` é sempre lido do `.env` — nunca hardcodar no código.
+> **Escopo**: esta LP é específica para venda/consignação de CARRO, servida em
+> `https://vendaseucarro.kikoautos.com`. A futura LP de MOTO será um **deploy
+> separado**, com seu próprio `RVOPS_LP_ORIGEM`. O `lp_origem` é sempre lido do
+> `.env`/painel — nunca hardcodar no código.
+
+## Hospedagem
+
+**Hostinger Node.js (Node 20+)**, deploy via Git. App entrypoint `server.js`,
+servido por Express. Substitui o setup anterior (Netlify static + Functions),
+cujos arquivos (`netlify.toml`, `netlify/functions/`, `_headers`) foram mantidos
+no repo apenas como fallback caso seja necessário voltar.
+
+Detalhes de deploy: `HOSTINGER_DEPLOY.md`.
 
 ## Arquivos envolvidos
 
-- `index.html` — form (`#leadForm`), captura de UTM, máscara WhatsApp, submit via fetch
-- `netlify/functions/lead-consignacao.js` — proxy server-side (Node 18, sem deps)
-- `netlify.toml` — declara `publish=.` e `functions=netlify/functions`
-- `.env.example` — template das variáveis (real fica no painel Netlify)
+- `index.html` — form (`#leadForm`), captura UTM, máscara WhatsApp, submit via fetch
+- `server.js` — servidor Express: estático + `/api/lead-consignacao` + `/api/health`
+- `package.json` — `express ^4.21.0`, Node `>=20`, `npm start` → `node server.js`
+- `.env.example` — template (real fica no painel Hostinger)
+- `netlify/functions/lead-consignacao.js`, `netlify.toml`, `_headers` — fallback Netlify (mantidos no repo, ignorados pela Hostinger)
 
 ## Variáveis de ambiente
 
-Configurar no painel Netlify em **Site settings → Environment variables**:
+Configurar no painel Hostinger (Node.js app → Environment variables):
 
-| Nome              | Valor                            | Obrigatória |
-| ----------------- | -------------------------------- | ----------- |
-| `RVOPS_CLIENT_ID` | `843790ca`                       | sim         |
-| `RVOPS_API_KEY`   | `<segredo do painel RVops>`      | sim         |
-| `RVOPS_LP_ORIGEM` | `lp-consignacao-carro-kikoautos` | sim         |
+| Nome              | Valor                       | Obrigatória |
+| ----------------- | --------------------------- | ----------- |
+| `RVOPS_CLIENT_ID` | `843790ca`                  | sim         |
+| `RVOPS_API_KEY`   | `<segredo do painel RVops>` | sim         |
+| `RVOPS_LP_ORIGEM` | `vendaseucarro-kikoautos`   | sim         |
+| `PORT`            | (Hostinger seta automaticamente) | não    |
 
-Para rodar local: `cp .env.example .env`, preencher a API key, `netlify dev`.
+Local: `cp .env.example .env`, preencher a API key, `npm start`.
 
-## Endpoint RVops
+## Endpoints internos
+
+- `GET  /api/health` — health check (`{ status: "ok", timestamp }`)
+- `POST /api/lead-consignacao` — proxy pro RVops (chamado pelo form do `index.html`)
+
+## Endpoint RVops (upstream)
 
 ```
 POST https://app.rvops.com/843790ca/api/v1/contacts
@@ -36,7 +53,7 @@ Headers:
 ```
 
 - 201 Created → contato criado
-- 409 ConflictError → email **ou** telefone já existe em outro contato (ambos são identificadores únicos)
+- 409 ConflictError → email **ou** telefone já existe (ambos são identificadores únicos)
 - Rate limit: 100 requisições a cada 10s
 
 ## Mapeamento de propriedades (testado via curl)
@@ -61,7 +78,7 @@ outras, palavra única em outras. Mantida exatamente como validada:
 | `utm_term`      | `utmterm`                   | Sem separador                      |
 
 > Em JS, propriedades com hífen exigem **bracket notation**:
-> `properties["marca-do-veiculo"]`. A function já faz isso.
+> `properties["marca-do-veiculo"]`. O `server.js` já faz isso.
 
 UTM vazios são **omitidos** do payload (não enviados como string vazia, pra não
 sobrescrever valor existente em algum fluxo de update futuro).
@@ -77,8 +94,11 @@ sobrescrever valor existente em algum fluxo de update futuro).
 
 ## TODOs antes do go-live
 
-- [ ] Configurar `RVOPS_API_KEY` na Netlify (CLIENT_ID e LP_ORIGEM podem ser commitados via `.env.example`, mas a key não)
+- [ ] Adicionar repo Git no painel Hostinger (ver `HOSTINGER_DEPLOY.md`)
+- [ ] Configurar `RVOPS_CLIENT_ID`, `RVOPS_API_KEY` e `RVOPS_LP_ORIGEM` no painel Hostinger
+- [ ] Apontar subdomínio `vendaseucarro.kikoautos.com` para a app Node
 - [ ] Substituir `wa.me/55XXXXXXXXXXX` em `index.html` (busca por `WHATSAPP_FALLBACK`) pelo número real
 - [ ] Plugar Meta Pixel / GA4 no `console.log('[conversion] lead-consignacao ok')`
-- [ ] Teste E2E: enviar lead com UTMs na URL, conferir contato no RVops com **todas** as 11 propriedades preenchidas, repetir mesmo email pra validar 409 → tela obrigado
-- [ ] Quando criar a LP de moto: **novo deploy** com `RVOPS_LP_ORIGEM=lp-consignacao-moto-kikoautos`, mesma function reutilizada
+- [ ] Teste E2E em prod: enviar lead com UTMs na URL, conferir contato no RVops com **todas** as 11 propriedades preenchidas, repetir mesmo email pra validar 409 → tela obrigado
+- [ ] `GET https://vendaseucarro.kikoautos.com/api/health` deve responder `{ status: "ok", timestamp }`
+- [ ] Quando criar a LP de moto: **novo deploy** (subdomínio próprio + `RVOPS_LP_ORIGEM` próprio), mesma estrutura reutilizada
