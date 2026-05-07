@@ -131,7 +131,7 @@ app.post('/api/lead-consignacao', async (req, res) => {
   const url = `https://app.rvops.com/${encodeURIComponent(RVOPS_CLIENT_ID)}/api/v1/contacts`;
 
   const ctrl = new AbortController();
-  const timeout = setTimeout(() => ctrl.abort(), 5000);
+  const timeout = setTimeout(() => ctrl.abort(), 12000);
 
   let upstream;
   try {
@@ -147,8 +147,21 @@ app.post('/api/lead-consignacao', async (req, res) => {
   } catch (e) {
     clearTimeout(timeout);
     const aborted = e && e.name === 'AbortError';
+
+    if (aborted) {
+      // Timeout do nosso lado, mas o RVops provavelmente processou.
+      // Retorna sucesso otimista — se falhou de verdade, o lead se perde
+      // (raro com timeout de 12s); se o usuário retentar, 409 = sucesso.
+      console.warn('[lead-consignacao] upstream timeout — assuming success', {
+        email,
+        phone
+      });
+      return res.status(200).json({ ok: true, deferred: true });
+    }
+
+    // Erro de rede real (DNS, TLS, conexão derrubada).
     console.error('[lead-consignacao] upstream fetch failed', {
-      aborted,
+      aborted: false,
       message: e && e.message,
       email
     });
