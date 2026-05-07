@@ -1,0 +1,9 @@
+# Configuração mínima Netlify — site estático na raiz, functions em /netlify/functions.
+# O _headers continua valendo (não duplicar regras aqui).
+
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"

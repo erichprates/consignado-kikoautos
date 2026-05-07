@@ -1747,20 +1747,28 @@
         <form id="leadForm" novalidate>
           <div class="grid-2-mobile" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem;">
             <div><label class="form-label" for="lf-nome">Nome completo</label><input id="lf-nome" name="nome" class="form-input" autocomplete="name" required /></div>
-            <div><label class="form-label" for="lf-whatsapp">WhatsApp</label><input id="lf-whatsapp" name="whatsapp" type="tel" inputmode="tel" autocomplete="tel" class="form-input" placeholder="(12) 9____-____" required /></div>
+            <div><label class="form-label" for="lf-email">Email</label><input id="lf-email" name="email" type="email" inputmode="email" autocomplete="email" class="form-input" required /></div>
           </div>
           <div class="grid-2-mobile" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem;">
+            <div><label class="form-label" for="lf-whatsapp">WhatsApp</label><input id="lf-whatsapp" name="whatsapp" type="tel" inputmode="tel" autocomplete="tel" class="form-input" placeholder="(11) 99999-9999" maxlength="15" required /></div>
             <div><label class="form-label" for="lf-marca">Marca</label><input id="lf-marca" name="marca" class="form-input" autocomplete="off" required /></div>
-            <div><label class="form-label" for="lf-modelo">Modelo</label><input id="lf-modelo" name="modelo" class="form-input" autocomplete="off" required /></div>
           </div>
-          <div class="grid-2-mobile" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem;">
-            <div><label class="form-label" for="lf-ano">Ano</label><input id="lf-ano" name="ano" type="number" inputmode="numeric" class="form-input" /></div>
-            <div><label class="form-label" for="lf-km">Quilometragem</label><input id="lf-km" name="km" inputmode="numeric" class="form-input" /></div>
+          <div class="grid-2-mobile" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem;">
+            <div><label class="form-label" for="lf-modelo">Modelo</label><input id="lf-modelo" name="modelo" class="form-input" autocomplete="off" required /></div>
+            <div><label class="form-label" for="lf-ano">Ano</label><input id="lf-ano" name="ano" type="number" inputmode="numeric" min="1990" class="form-input" required /></div>
+          </div>
+          <div style="margin-bottom:1.5rem;">
+            <label class="form-label" for="lf-km">Quilometragem</label><input id="lf-km" name="km" type="number" inputmode="numeric" min="0" class="form-input" required />
+          </div>
+          <div style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;" aria-hidden="true">
+            <label for="lf-website">Não preencha este campo</label>
+            <input id="lf-website" name="website" type="text" tabindex="-1" autocomplete="off" />
           </div>
           <div id="fitWarning" style="display:none;padding:14px 16px;background:rgba(160,24,24,0.06);border:1px solid rgba(160,24,24,0.2);border-radius:10px;font-size:13px;color:var(--red);margin-bottom:1.5rem;">
             <strong style="font-weight:500;">Atenção:</strong> Nosso padrão atual é 2020 ou mais novo, até 40.000 km. Mesmo assim, podemos conversar — clica em enviar que a gente retorna.
           </div>
-          <button type="submit" class="btn btn-red" style="width:100%;padding:18px 24px;font-size:15px;justify-content:center;">Quero avaliar meu carro <span class="arrow">→</span></button>
+          <div id="formError" role="alert" style="display:none;padding:14px 16px;background:rgba(160,24,24,0.08);border:1px solid rgba(160,24,24,0.25);border-radius:10px;font-size:13px;color:var(--red);margin-bottom:1.25rem;"></div>
+          <button id="lf-submit" type="submit" class="btn btn-red" style="width:100%;padding:18px 24px;font-size:15px;justify-content:center;">Quero avaliar meu carro <span class="arrow">→</span></button>
           <div style="margin-top:1.5rem;display:flex;gap:1.5rem;flex-wrap:wrap;justify-content:center;">
             <div class="mono" style="font-size:10px;letter-spacing:0.12em;color:var(--ink-4);text-transform:uppercase;display:flex;align-items:center;gap:6px;"><span style="color:var(--red);">—</span>Sem custo antecipado</div>
             <div class="mono" style="font-size:10px;letter-spacing:0.12em;color:var(--ink-4);text-transform:uppercase;display:flex;align-items:center;gap:6px;"><span style="color:var(--red);">—</span>Resposta em até 24h</div>
@@ -2430,12 +2438,51 @@
     }, 0.15);
   })();
 
+  /* ---------- UTM capture (sessionStorage) ---------- */
+  const UTM_KEYS = ['utm_source','utm_medium','utm_campaign','utm_content','utm_term'];
+  (function(){
+    try {
+      const params = new URLSearchParams(window.location.search);
+      UTM_KEYS.forEach(k => {
+        const v = params.get(k);
+        if (v && v.trim()) sessionStorage.setItem(k, v.trim().slice(0, 200));
+      });
+    } catch (_) { /* sessionStorage indisponível em alguns contextos — ignora */ }
+  })();
+  function readUTMs() {
+    const out = {};
+    UTM_KEYS.forEach(k => {
+      try { const v = sessionStorage.getItem(k); if (v) out[k] = v; } catch (_) {}
+    });
+    return out;
+  }
+
+  /* ---------- WhatsApp BR mask ---------- */
+  function maskWhatsappBR(raw) {
+    const d = (raw || '').replace(/\D/g, '').slice(0, 11);
+    if (d.length === 0) return '';
+    if (d.length <= 2) return '(' + d;
+    if (d.length <= 6) return '(' + d.slice(0,2) + ') ' + d.slice(2);
+    if (d.length <= 10) return '(' + d.slice(0,2) + ') ' + d.slice(2,6) + '-' + d.slice(6);
+    return '(' + d.slice(0,2) + ') ' + d.slice(2,7) + '-' + d.slice(7);
+  }
+
   /* ---------- Form ---------- */
   (function(){
     const form = document.getElementById('leadForm');
     const wrap = document.getElementById('formWrap');
     const fitWarning = document.getElementById('fitWarning');
+    const errorBox = document.getElementById('formError');
+    const submitBtn = document.getElementById('lf-submit');
     if (!form) return;
+
+    const CURRENT_YEAR = new Date().getFullYear();
+    // TODO: trocar pelo número real antes do go-live (formato wa.me/55DDDNUMERO)
+    const WHATSAPP_FALLBACK = 'https://wa.me/55XXXXXXXXXXX';
+    form.ano.setAttribute('max', String(CURRENT_YEAR));
+
+    const wa = form.whatsapp;
+    wa.addEventListener('input', () => { wa.value = maskWhatsappBR(wa.value); });
 
     function checkFit() {
       const ano = parseInt(form.ano.value, 10);
@@ -2446,8 +2493,27 @@
     form.ano.addEventListener('input', checkFit);
     form.km.addEventListener('input', checkFit);
 
-    form.addEventListener('submit', e => {
-      e.preventDefault();
+    function showError(msg) {
+      errorBox.innerHTML = msg;
+      errorBox.style.display = 'block';
+    }
+    function clearError() { errorBox.style.display = 'none'; errorBox.innerHTML = ''; }
+
+    function validate(values) {
+      if (!values.nome || values.nome.length < 2) return 'Informe seu nome completo.';
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) return 'Informe um email válido.';
+      const phoneDigits = values.whatsappDigits;
+      if (phoneDigits.length !== 10 && phoneDigits.length !== 11) return 'Informe um WhatsApp válido com DDD.';
+      if (!values.marca) return 'Informe a marca do veículo.';
+      if (!values.modelo) return 'Informe o modelo do veículo.';
+      const ano = parseInt(values.ano, 10);
+      if (Number.isNaN(ano) || ano < 1990 || ano > CURRENT_YEAR) return 'Informe um ano entre 1990 e ' + CURRENT_YEAR + '.';
+      const km = parseInt(values.km, 10);
+      if (Number.isNaN(km) || km < 0) return 'Informe a quilometragem.';
+      return null;
+    }
+
+    function renderThanks() {
       const nome = (form.nome.value.split(' ')[0] || 'tudo certo');
       const whatsapp = form.whatsapp.value || 'informado';
       wrap.innerHTML =
@@ -2459,6 +2525,65 @@
         '</div></div>';
       const reset = document.getElementById('formReset');
       if (reset) reset.addEventListener('click', () => window.location.reload());
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearError();
+
+      // honeypot — se o bot preencheu, simula sucesso e descarta
+      if ((form.website.value || '').trim() !== '') { renderThanks(); return; }
+
+      const whatsappDigits = (form.whatsapp.value || '').replace(/\D/g, '');
+      const values = {
+        nome: (form.nome.value || '').trim(),
+        email: (form.email.value || '').trim().toLowerCase(),
+        whatsapp: form.whatsapp.value || '',
+        whatsappDigits,
+        marca: (form.marca.value || '').trim(),
+        modelo: (form.modelo.value || '').trim(),
+        ano: form.ano.value,
+        km: form.km.value
+      };
+
+      const err = validate(values);
+      if (err) { showError(err); return; }
+
+      const utms = readUTMs();
+      const payload = {
+        firstname: values.nome,
+        email: values.email,
+        phone: whatsappDigits,
+        marca: values.marca,
+        modelo: values.modelo,
+        ano: values.ano,
+        quilometragem: values.km,
+        ...utms
+      };
+
+      submitBtn.disabled = true;
+      const originalLabel = submitBtn.innerHTML;
+      submitBtn.innerHTML = 'Enviando…';
+
+      try {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 8000);
+        const res = await fetch('/.netlify/functions/lead-consignacao', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          signal: ctrl.signal
+        });
+        clearTimeout(t);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        // conversão (placeholder — plugar Meta Pixel / GA4 depois)
+        try { console.log('[conversion] lead-consignacao ok'); } catch (_) {}
+        renderThanks();
+      } catch (e2) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalLabel;
+        showError('Algo deu errado, tente novamente ou nos chame no <a href="' + WHATSAPP_FALLBACK + '" target="_blank" rel="noopener" style="color:var(--red);text-decoration:underline;">WhatsApp</a>.');
+      }
     });
   })();
 

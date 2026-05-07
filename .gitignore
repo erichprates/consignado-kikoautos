@@ -12,6 +12,15 @@ Thumbs.db
 .idea/
 .vscode/
 
+# Env / secrets — RVops API key etc (use .env.example como template)
+.env
+.env.local
+.env.*.local
+
+# Netlify CLI artifacts
+.netlify/
+node_modules/
+
 # Originais / rascunhos soltos no diretório (apenas root — não afeta assets/)
 /Background.png
 /DSC*.png
