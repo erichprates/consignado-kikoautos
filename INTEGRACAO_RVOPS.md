@@ -97,8 +97,7 @@ sobrescrever valor existente em algum fluxo de update futuro).
 - [ ] Adicionar repo Git no painel Hostinger (ver `HOSTINGER_DEPLOY.md`)
 - [ ] Configurar `RVOPS_CLIENT_ID`, `RVOPS_API_KEY` e `RVOPS_LP_ORIGEM` no painel Hostinger
 - [ ] Apontar subdomínio `vendaseucarro.kikoautos.com` para a app Node
-- [ ] Substituir `wa.me/55XXXXXXXXXXX` em `index.html` (busca por `WHATSAPP_FALLBACK`) pelo número real
-- [ ] Plugar Meta Pixel / GA4 no `console.log('[conversion] lead-consignacao ok')`
+- [ ] Plugar Meta Pixel / GA4 no GTM via trigger `Custom Event = lead_consignacao_success` (ou `lead_consignacao_thankyou_pageview` na tela de obrigado)
 - [ ] Teste E2E em prod: enviar lead com UTMs na URL, conferir contato no RVops com **todas** as 11 propriedades preenchidas, repetir mesmo email pra validar 409 → tela obrigado
 - [ ] `GET https://vendaseucarro.kikoautos.com/api/health` deve responder `{ status: "ok", timestamp }`
 - [ ] Quando criar a LP de moto: **novo deploy** (subdomínio próprio + `RVOPS_LP_ORIGEM` próprio), mesma estrutura reutilizada

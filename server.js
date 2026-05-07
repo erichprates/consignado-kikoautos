@@ -8,6 +8,7 @@ const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const APP_VERSION = '1.0.0'; // hardcoded — espelha o package.json. Bumpar manualmente no release.
 
 // Hostinger usa proxy reverso na frente — habilita req.ip / X-Forwarded-For corretos.
 app.set('trust proxy', true);
@@ -42,9 +43,16 @@ app.use((req, res, next) => {
 // Static — pasta /assets/ (única pasta de assets do projeto).
 app.use('/assets', express.static(path.join(__dirname, 'assets')));
 
-// Health check.
+// Health check — enriquecido pra debug remoto sem SSH. Não inclui envs/paths
+// (segurança) nem chamada ao RVops (custo de quota a cada ping).
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime_seconds: process.uptime(),
+    node_version: process.version,
+    app_version: APP_VERSION
+  });
 });
 
 // === Helpers idênticos à Netlify Function ===
@@ -212,6 +220,16 @@ app.use('/api/*', (req, res) => {
 // Index na raiz.
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Página de obrigado (destino do redirect pós-submit do form).
+app.get('/obrigado', (req, res) => {
+  res.sendFile(path.join(__dirname, 'obrigado.html'));
+});
+
+// Política de privacidade (LGPD).
+app.get('/privacidade', (req, res) => {
+  res.sendFile(path.join(__dirname, 'privacidade.html'));
 });
 
 // Catch-all 404 — qualquer rota não-API não-encontrada retorna 404 com a home.

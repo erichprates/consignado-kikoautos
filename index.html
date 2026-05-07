@@ -841,6 +841,52 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     .chart-area { height: 200px !important; }
   }
 </style>
+<style>
+  /* LGPD consent banner — fixo no rodapé, primeira visita só */
+  .consent-banner {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--white);
+    border-top: 1px solid var(--ink);
+    padding: 1.25rem 1.5rem;
+    z-index: 9999;
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    font-size: 14px;
+    color: var(--ink-3);
+    line-height: 1.45;
+  }
+  .consent-banner[hidden] { display: none; }
+  .consent-text { flex: 1; min-width: 280px; max-width: 720px; }
+  .consent-text a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+  .consent-actions { display: flex; gap: 0.75rem; flex-shrink: 0; }
+  .consent-banner .btn-sm {
+    padding: 12px 18px;
+    font-family: inherit;
+    font-size: 13px;
+    border-radius: 999px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: transform 160ms ease, background 160ms ease, color 160ms ease, border-color 160ms ease;
+  }
+  .consent-banner .btn-red-sm { background: var(--red); color: #fff; }
+  .consent-banner .btn-red-sm:hover { background: var(--red-deep); }
+  .consent-banner .btn-outline-sm {
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--ink-6);
+  }
+  .consent-banner .btn-outline-sm:hover { background: var(--ink); color: #fff; border-color: var(--ink); }
+  @media (max-width: 600px) {
+    .consent-banner { flex-direction: column; align-items: stretch; gap: 1rem; }
+    .consent-actions { width: 100%; }
+    .consent-banner .btn-sm { flex: 1; }
+  }
+</style>
 </head>
 <body>
 <!-- Google Tag Manager (noscript) -->
@@ -2488,8 +2534,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     if (!form) return;
 
     const CURRENT_YEAR = new Date().getFullYear();
-    // TODO: trocar pelo número real antes do go-live (formato wa.me/55DDDNUMERO)
-    const WHATSAPP_FALLBACK = 'https://wa.me/55XXXXXXXXXXX';
+    const WHATSAPP_FALLBACK = 'https://wa.me/5512996307771?text=Ol%C3%A1!%20Tive%20um%20problema%20pra%20enviar%20o%20formul%C3%A1rio%20de%20venda%20do%20meu%20carro.';
     form.ano.setAttribute('max', String(CURRENT_YEAR));
 
     const wa = form.whatsapp;
@@ -2524,6 +2569,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       return null;
     }
 
+    // Mantida como fallback caso o redirect pra /obrigado seja revertido no futuro.
+    // Hoje NÃO é chamada — o submit handler faz redirect direto pra /obrigado.
     function renderThanks() {
       const nome = (form.nome.value.split(' ')[0] || 'tudo certo');
       const whatsapp = form.whatsapp.value || 'informado';
@@ -2542,8 +2589,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       e.preventDefault();
       clearError();
 
-      // honeypot — se o bot preencheu, simula sucesso e descarta
-      if ((form.website.value || '').trim() !== '') { renderThanks(); return; }
+      // honeypot — se o bot preencheu, simula sucesso (redirect pro mesmo /obrigado) e descarta
+      if ((form.website.value || '').trim() !== '') { window.location.href = '/obrigado'; return; }
 
       const whatsappDigits = (form.whatsapp.value || '').replace(/\D/g, '');
       const values = {
@@ -2601,7 +2648,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           lead_quilometragem: values.km,
           lead_deferred: data.deferred === true
         });
-        renderThanks();
+        // 100ms dá tempo do GTM processar o push antes da página descarregar.
+        // renderThanks() segue definido logo abaixo como fallback, mas não é mais chamado.
+        setTimeout(() => { window.location.href = '/obrigado'; }, 100);
       } catch (e2) {
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalLabel;
@@ -2687,6 +2736,34 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
     setTimeout(show, 4000);
   })();
+})();
+</script>
+
+<!-- LGPD consent banner -->
+<div id="consentBanner" class="consent-banner" role="region" aria-label="Consentimento de cookies" hidden>
+  <div class="consent-text">A gente usa cookies pra melhorar sua experiência e entender como o site é usado. Você pode aceitar todos ou rejeitar os de marketing. <a href="/privacidade">Saiba mais →</a></div>
+  <div class="consent-actions">
+    <button id="consentReject" type="button" class="btn-sm btn-outline-sm">Rejeitar marketing</button>
+    <button id="consentAccept" type="button" class="btn-sm btn-red-sm">Aceitar todos</button>
+  </div>
+</div>
+<script>
+(function() {
+  const KEY = 'consent_kiko';
+  const banner = document.getElementById('consentBanner');
+  if (!banner) return;
+  let saved = null;
+  try { saved = localStorage.getItem(KEY); } catch (_) {}
+  if (saved === 'accepted' || saved === 'rejected') return;
+  banner.hidden = false;
+  function decide(value, dlEvent) {
+    try { localStorage.setItem(KEY, value); } catch (_) {}
+    banner.hidden = true;
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({ event: dlEvent, consent_marketing: value === 'accepted' });
+  }
+  document.getElementById('consentAccept').addEventListener('click', () => decide('accepted', 'consent_granted'));
+  document.getElementById('consentReject').addEventListener('click', () => decide('rejected', 'consent_denied'));
 })();
 </script>
 </body>

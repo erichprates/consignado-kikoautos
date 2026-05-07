@@ -72,12 +72,20 @@ No hPanel → **Domínios** → **Subdomínios**:
 ## 5. Validação
 
 ```bash
-# Health check
+# Health check (agora retorna uptime + versões)
 curl https://vendaseucarro.kikoautos.com/api/health
-# esperado: {"status":"ok","timestamp":"2026-..."}
+# esperado: {"status":"ok","timestamp":"2026-...","uptime_seconds":N,"node_version":"v20.x.x","app_version":"1.0.0"}
 
 # LP carregando
 curl -I https://vendaseucarro.kikoautos.com/
+# esperado: HTTP/2 200, Content-Type: text/html
+
+# Página de obrigado (destino do redirect pós-submit)
+curl -I https://vendaseucarro.kikoautos.com/obrigado
+# esperado: HTTP/2 200, Content-Type: text/html
+
+# Política de privacidade (LGPD)
+curl -I https://vendaseucarro.kikoautos.com/privacidade
 # esperado: HTTP/2 200, Content-Type: text/html
 
 # Cache de assets
@@ -86,9 +94,33 @@ curl -I https://vendaseucarro.kikoautos.com/assets/logo-kiko.svg
 
 # Lead end-to-end (smoke test — manda lead de teste)
 # Abre vendaseucarro.kikoautos.com?utm_source=teste&utm_campaign=smoke,
-# preenche o form, confere o contato no painel RVops com lp_origem=vendaseucarro-kikoautos
-# e utmsource=teste, utmcampaign=smoke.
+# preenche o form, confere:
+#   - redirect pra /obrigado acontece
+#   - contato no painel RVops com lp_origem=vendaseucarro-kikoautos,
+#     utmsource=teste, utmcampaign=smoke
+#   - eventos no GTM Preview: lead_consignacao_success (LP) e
+#     lead_consignacao_thankyou_pageview (página de obrigado)
+#   - banner LGPD aparece em primeira visita; após "Aceitar todos" ou
+#     "Rejeitar marketing", sumir e não aparecer mais (localStorage)
 ```
+
+## 5.1. Configurar UptimeRobot (opcional, recomendado)
+
+Monitor externo gratuito que pinga o `/api/health` periodicamente e avisa por
+email se cair. 50 monitores grátis, 5 min de intervalo.
+
+1. Cria conta em [uptimerobot.com](https://uptimerobot.com)
+2. **Add New Monitor** → tipo **HTTP(s) - Keyword**
+3. Configuração:
+   - **URL**: `https://vendaseucarro.kikoautos.com/api/health`
+   - **Monitoring Interval**: 5 minutes
+   - **Keyword Type**: exists
+   - **Keyword**: `"status":"ok"` (com aspas — checa o valor, não só presença)
+4. **Alert Contacts**: adiciona seu email (e WhatsApp via integração se quiser)
+5. Salva. Primeira checagem roda em <1min.
+
+Se a app cair ou o health retornar JSON sem `"status":"ok"`, o UptimeRobot manda
+email com timestamp e duração da queda.
 
 ## 6. Logs
 
