@@ -1864,6 +1864,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   const KIKO_INK = '#0A0A0A';
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  /* ---------- Warmup do Node app no Hostinger ---------- */
+  // Passenger derruba o processo após ~minutos de idle; cold start leva 10-30s.
+  // Pingar /api/health no load garante que o app esteja quente quando o user
+  // submeter o form (1-2 min depois). Fire-and-forget; ignora resultado.
+  try { fetch('/api/health', { method: 'GET', cache: 'no-store' }).catch(() => {}); } catch (_) {}
+
   /* ---------- Scroll progress ---------- */
   (function(){
     const bar = document.getElementById('scrollProgress');
@@ -2538,7 +2544,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     form.ano.setAttribute('max', String(CURRENT_YEAR));
 
     const wa = form.whatsapp;
-    wa.addEventListener('input', () => { wa.value = maskWhatsappBR(wa.value); });
+    // input cobre digitação manual; change/blur cobrem autofill iOS (Keychain,
+    // contatos), que às vezes preenche o valor sem disparar input.
+    const reapplyMask = () => { wa.value = maskWhatsappBR(wa.value); };
+    wa.addEventListener('input', reapplyMask);
+    wa.addEventListener('change', reapplyMask);
+    wa.addEventListener('blur', reapplyMask);
 
     function checkFit() {
       const ano = parseInt(form.ano.value, 10);
@@ -2623,9 +2634,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       const originalLabel = submitBtn.innerHTML;
       submitBtn.innerHTML = 'Enviando…';
 
+      // Safety net: se algo travar a UI (bug AbortController iOS Safari, hang
+      // em algum await, etc), força o redirect após 40s. O lead provavelmente
+      // já foi processado pelo servidor — caso de duplicado é tratado como
+      // sucesso (server.js retorna 200 ok recurring no 409 do RVops).
+      const safetyRedirect = setTimeout(() => { window.location.href = '/obrigado'; }, 40000);
+
       try {
         const ctrl = new AbortController();
-        const t = setTimeout(() => ctrl.abort(), 15000);
+        const t = setTimeout(() => ctrl.abort(), 30000);
         const res = await fetch('/api/lead-consignacao', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -2634,10 +2651,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         });
         clearTimeout(t);
         if (!res.ok) throw new Error('HTTP ' + res.status);
-        let data = {};
-        try { data = await res.json(); } catch (_) { /* corpo ausente/inválido — segue como sucesso */ }
+        // NÃO awaita res.json() — em mobile o body pode pendurar pra sempre
+        // mesmo com 200 ok (chunked sem fechar + iOS Safari). Como res.ok já
+        // confirma sucesso, redireciona direto. Perdemos o flag deferred do
+        // payload (era só telemetria), mas evitamos UI travada.
+        clearTimeout(safetyRedirect);
         // GTM: dispara evento de conversão pra plugar Meta Pixel / GA4 / etc no painel.
-        // lead_deferred=true sinaliza timeout otimista (RVops provavelmente recebeu mas não confirmou).
         window.dataLayer = window.dataLayer || [];
         window.dataLayer.push({
           event: 'lead_consignacao_success',
@@ -2645,13 +2664,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           lead_marca: values.marca,
           lead_modelo: values.modelo,
           lead_ano: values.ano,
-          lead_quilometragem: values.km,
-          lead_deferred: data.deferred === true
+          lead_quilometragem: values.km
         });
         // 100ms dá tempo do GTM processar o push antes da página descarregar.
         // renderThanks() segue definido logo abaixo como fallback, mas não é mais chamado.
         setTimeout(() => { window.location.href = '/obrigado'; }, 100);
       } catch (e2) {
+        clearTimeout(safetyRedirect);
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalLabel;
         showError('Algo deu errado, tente novamente ou nos chame no <a href="' + WHATSAPP_FALLBACK + '" target="_blank" rel="noopener" style="color:var(--red);text-decoration:underline;">WhatsApp</a>.');
