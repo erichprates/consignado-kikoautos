@@ -27,6 +27,11 @@ if (!RVOPS_CLIENT_ID || !RVOPS_API_KEY || !RVOPS_LP_ORIGEM) {
   });
 }
 
+// Pipeline/stage do funil RVops para criação do Negócio. Default validado via curl
+// (pipeline 2 = "Consignação", stage 8 = "Novo Lead"). Override via env se mudar.
+const RVOPS_PIPELINE_ID = parseInt(process.env.RVOPS_PIPELINE_ID, 10) || 2;
+const RVOPS_STAGE_ID = parseInt(process.env.RVOPS_STAGE_ID, 10) || 8;
+
 // Cache headers — convertido do _headers Netlify:
 //   /assets/*   → 1 ano immutable
 //   /*.webp     → 1 ano immutable
@@ -111,6 +116,8 @@ app.post('/api/lead-consignacao', async (req, res) => {
   }
 
   // Nomes EXATOS validados via curl. Hífens onde tem hífen, sem separador nos utm*.
+  // tipo-de-conversao-21 / origem-do-negocio-21 / tipo-de-veiculo2 são as
+  // properties de segmentação RVops no Contato (sufixos -21/2 são parte do nome).
   const properties = {
     firstname,
     email,
@@ -119,7 +126,10 @@ app.post('/api/lead-consignacao', async (req, res) => {
     'modelo-do-veiculo': modelo,
     'ano-de-fabricacaomodelo': String(anoInt),
     quilometragem: String(kmInt),
-    lp_origem: RVOPS_LP_ORIGEM
+    lp_origem: RVOPS_LP_ORIGEM,
+    'tipo-de-conversao-21': '-consignado',
+    'origem-do-negocio-21': '-site',
+    'tipo-de-veiculo2': 'carro-4'
   };
 
   // Mapa UTM: front manda com underscore (utm_source), RVops espera sem
@@ -193,11 +203,74 @@ app.post('/api/lead-consignacao', async (req, res) => {
   }
 
   if (upstream.status >= 200 && upstream.status < 300) {
+    const contactId = upstreamBody && upstreamBody.id;
     console.info('[lead-consignacao] created', {
-      id: upstreamBody && upstreamBody.id,
+      id: contactId,
       email
     });
-    return res.status(200).json({ ok: true });
+
+    // Cria Negócio associado ao Contato. Falha aqui NÃO propaga erro pro
+    // usuário — o lead já está no CRM. Logamos pra reconciliação manual.
+    const vehicleParts = [marca, modelo, String(anoInt)].filter(Boolean).join(' ').trim();
+    const dealName = vehicleParts ? `${firstname} - ${vehicleParts}` : firstname;
+    const dealProperties = {
+      name: dealName,
+      pipeline_id: RVOPS_PIPELINE_ID,
+      stage_id: RVOPS_STAGE_ID,
+      'tipo-de-conversao-20': '-consignado',
+      'origem-do-negocio-20': '-site',
+      'tipo-de-veiculo1': 'carro'
+    };
+
+    const dealUrl = `https://app.rvops.com/${encodeURIComponent(RVOPS_CLIENT_ID)}/api/v1/deals`;
+    const dealCtrl = new AbortController();
+    const dealTimeout = setTimeout(() => dealCtrl.abort(), 12000);
+
+    let dealUpstream;
+    try {
+      dealUpstream = await fetch(dealUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'rvops-apikey': RVOPS_API_KEY
+        },
+        body: JSON.stringify({
+          properties: dealProperties,
+          associations: { contacts: [contactId] }
+        }),
+        signal: dealCtrl.signal
+      });
+    } catch (e) {
+      clearTimeout(dealTimeout);
+      const aborted = e && e.name === 'AbortError';
+      console.error('[lead-consignacao] deal creation failed', {
+        contactId,
+        aborted,
+        message: e && e.message,
+        sentDealProperties: dealProperties
+      });
+      return res.status(200).json({ ok: true, dealCreationFailed: true });
+    }
+    clearTimeout(dealTimeout);
+
+    let dealBody = null;
+    try { dealBody = await dealUpstream.json(); } catch (_) { /* RVops pode devolver não-JSON em erro */ }
+
+    if (dealUpstream.status >= 200 && dealUpstream.status < 300) {
+      console.info('[lead-consignacao] deal created', {
+        dealId: dealBody && dealBody.id,
+        contactId
+      });
+      return res.status(200).json({ ok: true });
+    }
+
+    console.error('[lead-consignacao] deal creation failed', {
+      contactId,
+      dealStatus: dealUpstream.status,
+      dealBody,
+      sentDealProperties: dealProperties
+    });
+    return res.status(200).json({ ok: true, dealCreationFailed: true });
   }
 
   // Erro upstream — log detalhado pro server (inclui body enviado pra debug).
