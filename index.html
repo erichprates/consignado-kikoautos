@@ -1636,11 +1636,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <div style="font-size:18px;font-weight:500;letter-spacing:-0.01em;">Quilometragem</div>
         </div>
         <div class="regua-cell entra">
-          <div><div style="font-size:17px;font-weight:500;letter-spacing:-0.01em;">Até 40.000 km</div></div>
+          <div><div style="font-size:17px;font-weight:500;letter-spacing:-0.01em;">Até 50.000 km</div></div>
         </div>
         <div class="regua-cell fora">
           <div>
-            <div style="font-size:17px;font-weight:500;letter-spacing:-0.01em;color:var(--ink-3);text-decoration:line-through;text-decoration-color:rgba(177,27,27,0.5);text-decoration-thickness:1.5px;">Acima de 40.000 km</div>
+            <div style="font-size:17px;font-weight:500;letter-spacing:-0.01em;color:var(--ink-3);text-decoration:line-through;text-decoration-color:rgba(177,27,27,0.5);text-decoration-thickness:1.5px;">Acima de 50.000 km</div>
             <div style="font-size:13px;color:var(--ink-4);margin-top:4px;">Avaliado caso a caso, depende do histórico.</div>
           </div>
         </div>
@@ -1822,7 +1822,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <input id="lf-website" name="website" type="text" tabindex="-1" autocomplete="off" />
           </div>
           <div id="fitWarning" style="display:none;padding:14px 16px;background:rgba(160,24,24,0.06);border:1px solid rgba(160,24,24,0.2);border-radius:10px;font-size:13px;color:var(--red);margin-bottom:1.5rem;">
-            <strong style="font-weight:500;">Atenção:</strong> Nosso padrão atual é 2020 ou mais novo, até 40.000 km. Mesmo assim, podemos conversar — clica em enviar que a gente retorna.
+            <strong style="font-weight:500;">Atenção:</strong> Nosso padrão atual é 2020 ou mais novo, até 50.000 km. Mesmo assim, podemos conversar — clica em enviar que a gente retorna.
           </div>
           <div id="formError" role="alert" style="display:none;padding:14px 16px;background:rgba(160,24,24,0.08);border:1px solid rgba(160,24,24,0.25);border-radius:10px;font-size:13px;color:var(--red);margin-bottom:1.25rem;"></div>
           <button id="lf-submit" type="submit" class="btn btn-red" style="width:100%;padding:18px 24px;font-size:15px;justify-content:center;">Quero avaliar meu carro <span class="arrow">→</span></button>
@@ -2554,7 +2554,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     function checkFit() {
       const ano = parseInt(form.ano.value, 10);
       const km = parseInt((form.km.value || '').replace(/\D/g, ''), 10);
-      const showWarn = (!Number.isNaN(ano) && ano > 0 && ano < 2020) || (!Number.isNaN(km) && km > 40000);
+      const showWarn = (!Number.isNaN(ano) && ano > 0 && ano < 2020) || (!Number.isNaN(km) && km > 50000);
       fitWarning.style.display = showWarn ? 'block' : 'none';
     }
     form.ano.addEventListener('input', checkFit);
