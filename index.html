@@ -2760,9 +2760,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
 <!-- LGPD consent banner -->
 <div id="consentBanner" class="consent-banner" role="region" aria-label="Consentimento de cookies" hidden>
-  <div class="consent-text">A gente usa cookies pra melhorar sua experiência e entender como o site é usado. Você pode aceitar todos ou rejeitar os de marketing. <a href="/privacidade">Saiba mais →</a></div>
+  <div class="consent-text">A gente usa cookies pra melhorar sua experiência e entender como o site é usado. Pra rejeitar cookies de marketing, veja a <a href="/privacidade">política de privacidade</a>.</div>
   <div class="consent-actions">
-    <button id="consentReject" type="button" class="btn-sm btn-outline-sm">Rejeitar marketing</button>
     <button id="consentAccept" type="button" class="btn-sm btn-red-sm">Aceitar todos</button>
   </div>
 </div>
@@ -2782,7 +2781,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     window.dataLayer.push({ event: dlEvent, consent_marketing: value === 'accepted' });
   }
   document.getElementById('consentAccept').addEventListener('click', () => decide('accepted', 'consent_granted'));
-  document.getElementById('consentReject').addEventListener('click', () => decide('rejected', 'consent_denied'));
 })();
 </script>
 </body>
