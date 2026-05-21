@@ -219,7 +219,11 @@ app.post('/api/lead-consignacao', async (req, res) => {
       stage_id: RVOPS_STAGE_ID,
       'tipo-de-conversao-20': '-consignado',
       'origem-do-negocio-20': '-site',
-      'tipo-de-veiculo1': 'carro'
+      'tipo-de-veiculo1': 'carro',
+      marca_do_veiculo: marca,
+      form_consignado__modelo_do_veiculo: modelo,
+      ano_do_modelo_fabricacao: String(anoInt),
+      km: String(kmInt)
     };
 
     const dealUrl = `https://app.rvops.com/${encodeURIComponent(RVOPS_CLIENT_ID)}/api/v1/deals`;
