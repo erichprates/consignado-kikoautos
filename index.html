@@ -1843,7 +1843,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <div><label class="form-label" for="lf-ano">Ano</label><input id="lf-ano" name="ano" type="number" inputmode="numeric" min="1990" class="form-input" required /></div>
           </div>
           <div style="margin-bottom:1.5rem;">
-            <label class="form-label" for="lf-km">Quilometragem</label><input id="lf-km" name="km" type="number" inputmode="numeric" min="0" class="form-input" required />
+            <label class="form-label" for="lf-km">Quilometragem</label><input id="lf-km" name="km" type="number" inputmode="numeric" min="0" max="999999" class="form-input" required />
           </div>
           <div style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;" aria-hidden="true">
             <label for="lf-website">Não preencha este campo</label>
@@ -2605,6 +2605,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       if (Number.isNaN(ano) || ano < 1990 || ano > CURRENT_YEAR) return 'Informe um ano entre 1990 e ' + CURRENT_YEAR + '.';
       const km = parseInt(values.km, 10);
       if (Number.isNaN(km) || km < 0) return 'Informe a quilometragem.';
+      if (km > 999999) return 'Informe uma quilometragem válida (até 999.999 km).';
       return null;
     }
 
@@ -2678,7 +2679,16 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           signal: ctrl.signal
         });
         clearTimeout(t);
-        if (!res.ok) throw new Error('HTTP ' + res.status);
+        if (!res.ok) {
+          // Lê a mensagem do server (ex. "Quilometragem inválida.") pra mostrar
+          // o motivo real em vez de erro genérico. Body de erro é pequeno e já
+          // veio completo — sem o risco de hang do success em chunked/iOS.
+          let serverMsg = '';
+          try { const data = await res.json(); serverMsg = (data && data.error) || ''; } catch (_) {}
+          const err = new Error('HTTP ' + res.status);
+          err.serverMsg = serverMsg;
+          throw err;
+        }
         // NÃO awaita res.json() — em mobile o body pode pendurar pra sempre
         // mesmo com 200 ok (chunked sem fechar + iOS Safari). Como res.ok já
         // confirma sucesso, redireciona direto. Perdemos o flag deferred do
@@ -2701,7 +2711,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         clearTimeout(safetyRedirect);
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalLabel;
-        showError('Algo deu errado, tente novamente ou nos chame no <a href="' + WHATSAPP_FALLBACK + '" target="_blank" rel="noopener" style="color:var(--red);text-decoration:underline;">WhatsApp</a>.');
+        const base = (e2 && e2.serverMsg) ? e2.serverMsg.replace(/\.$/, '') : 'Algo deu errado';
+        showError(base + ', tente novamente ou nos chame no <a href="' + WHATSAPP_FALLBACK + '" target="_blank" rel="noopener" style="color:var(--red);text-decoration:underline;">WhatsApp</a>.');
       }
     });
   })();
