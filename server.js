@@ -118,6 +118,7 @@ app.post('/api/lead-consignacao', async (req, res) => {
   // CRM pode não ter coluna de km. Uma info por linha, com rótulo em PT.
   // TODO: confirmar com o dev se km tem campo dedicado; se tiver, sai daqui.
   const obs = [];
+  obs.push(`Veículo oferecido (consignação): ${marca} ${modelo} ${anoInt}`);
   obs.push(`Quilometragem: ${kmInt} km`);
   const utmLabels = {
     utm_source: 'UTM Source',
@@ -133,17 +134,22 @@ app.post('/api/lead-consignacao', async (req, res) => {
 
   // Contrato leads-ingest: campos numéricos descartam string (ano/km vão como
   // Number — "2022" com aspas é ignorado silenciosamente pelo CRM); whatsapp só
-  // dígitos com prefixo 55; origem é fixada pela API key. marca/modelo/ano são
-  // o carro da consignação (ativo, não veículo de troca). quilometragem mandada
-  // como número: se houver coluna dedicada o CRM usa, senão ignora (fica em obs).
+  // dígitos com prefixo 55; origem é fixada pela API key.
+  //
+  // IMPORTANTE: na consignação o cliente está OFERECENDO o carro, não comprando.
+  // marca/modelo/ano "puros" no CRM são o carro de INTERESSE (compra) — por isso
+  // vão nos campos de veículo de troca/oferecido. O veículo também é repetido em
+  // observacoes como rede de segurança (caso a chave do CRM tenha outro nome,
+  // pegadinha conhecida) — quando o dev confirmar as keys, dá pra tirar de lá.
+  // quilometragem mandada como número: se houver coluna dedicada o CRM usa.
   // Chaves vazias são omitidas via spread condicional.
   const leadPayload = {
     nome_completo: nome,
     email,
     whatsapp: phone,
-    marca,
-    modelo,
-    ano: anoInt,
+    marca_veiculo_troca: marca,
+    modelo_veiculo_troca: modelo,
+    ano_veiculo_troca: anoInt,
     quilometragem: kmInt,
     tipo_conversao: TIPO_CONVERSAO,
     ...(obs.length ? { observacoes: obs.join('\n') } : {})
