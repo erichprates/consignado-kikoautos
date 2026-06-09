@@ -1,7 +1,7 @@
 // Servidor Express — Hostinger Node.js (Node 20+).
-// Serve a LP estática + proxy /api/lead-consignacao para o RVops.
-// Lógica do proxy idêntica à netlify/functions/lead-consignacao.js (mesmas
-// validações, mesmos nomes internos das properties, mesmos timeouts e logs).
+// Serve a LP estática + proxy /api/lead-consignacao para o CRM (Supabase Edge
+// Function leads-ingest). O front NUNCA chama o CRM direto: a x-api-key fica só
+// aqui (env var).
 
 const express = require('express');
 const path = require('path');
@@ -18,19 +18,18 @@ app.use(express.json({ limit: '10kb' }));
 
 // Boot-time env check — apenas warning. O erro real só dispara em /api/lead-consignacao
 // (assim o servidor sobe mesmo se as envs ainda não tiverem sido configuradas).
-const { RVOPS_CLIENT_ID, RVOPS_API_KEY, RVOPS_LP_ORIGEM } = process.env;
-if (!RVOPS_CLIENT_ID || !RVOPS_API_KEY || !RVOPS_LP_ORIGEM) {
-  console.warn('[boot] env vars do RVops faltando', {
-    hasClientId: !!RVOPS_CLIENT_ID,
-    hasApiKey: !!RVOPS_API_KEY,
-    hasLpOrigem: !!RVOPS_LP_ORIGEM
+const { KCRM_API_KEY, KCRM_ENDPOINT } = process.env;
+if (!KCRM_API_KEY || !KCRM_ENDPOINT) {
+  console.warn('[boot] env vars do CRM faltando', {
+    hasApiKey: !!KCRM_API_KEY,
+    hasEndpoint: !!KCRM_ENDPOINT
   });
 }
 
-// Pipeline/stage do funil RVops para criação do Negócio. Default validado via curl
-// (pipeline 2 = "Consignação", stage 8 = "Novo Lead"). Override via env se mudar.
-const RVOPS_PIPELINE_ID = parseInt(process.env.RVOPS_PIPELINE_ID, 10) || 2;
-const RVOPS_STAGE_ID = parseInt(process.env.RVOPS_STAGE_ID, 10) || 8;
+// String que identifica esta LP no CRM. A origem ("Site") é fixada pela própria
+// API key e NÃO trafega no payload — o que distingue cada LP é o tipo_conversao.
+// "consignacao_carro" pra separar da LP de consignação de motos (mesmo CRM).
+const TIPO_CONVERSAO = 'consignacao_carro';
 
 // Cache headers — convertido do _headers Netlify:
 //   /assets/*   → 1 ano immutable
@@ -49,7 +48,7 @@ app.use((req, res, next) => {
 app.use('/assets', express.static(path.join(__dirname, 'assets')));
 
 // Health check — enriquecido pra debug remoto sem SSH. Não inclui envs/paths
-// (segurança) nem chamada ao RVops (custo de quota a cada ping).
+// (segurança) nem chamada ao CRM (custo/quota a cada ping).
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -60,7 +59,7 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// === Helpers idênticos à Netlify Function ===
+// === Helpers ===
 function normalizeWhatsapp(raw) {
   const digits = String(raw || '').replace(/\D/g, '');
   if (digits.length !== 10 && digits.length !== 11) return null;
@@ -73,13 +72,12 @@ function sanitize(s, max = 200) {
   return String(s == null ? '' : s).trim().slice(0, max);
 }
 
-// POST /api/lead-consignacao — proxy server-side pro RVops.
+// POST /api/lead-consignacao — proxy server-side pro CRM (leads-ingest).
 app.post('/api/lead-consignacao', async (req, res) => {
-  if (!RVOPS_CLIENT_ID || !RVOPS_API_KEY || !RVOPS_LP_ORIGEM) {
+  if (!KCRM_API_KEY || !KCRM_ENDPOINT) {
     console.error('[lead-consignacao] missing env vars', {
-      hasClientId: !!RVOPS_CLIENT_ID,
-      hasApiKey: !!RVOPS_API_KEY,
-      hasLpOrigem: !!RVOPS_LP_ORIGEM
+      hasApiKey: !!KCRM_API_KEY,
+      hasEndpoint: !!KCRM_ENDPOINT
     });
     return res.status(500).json({ error: 'Configuração indisponível, tente novamente em instantes.' });
   }
@@ -92,15 +90,15 @@ app.post('/api/lead-consignacao', async (req, res) => {
     return res.status(200).json({ ok: true });
   }
 
-  const firstname = sanitize(body.firstname, 120);
+  const nome = sanitize(body.firstname, 120);   // nome completo (front manda em firstname)
   const email = sanitize(body.email, 200).toLowerCase();
-  const phone = normalizeWhatsapp(body.phone);
+  const phone = normalizeWhatsapp(body.phone);  // só dígitos + prefixo 55
   const marca = sanitize(body.marca, 80);
   const modelo = sanitize(body.modelo, 120);
   const ano = sanitize(body.ano, 4);
   const quilometragem = sanitize(body.quilometragem, 10);
 
-  if (!firstname) return res.status(400).json({ error: 'Nome é obrigatório.' });
+  if (!nome) return res.status(400).json({ error: 'Nome é obrigatório.' });
   if (!isValidEmail(email)) return res.status(400).json({ error: 'Email inválido.' });
   if (!phone) return res.status(400).json({ error: 'WhatsApp inválido.' });
   if (!marca) return res.status(400).json({ error: 'Marca é obrigatória.' });
@@ -115,51 +113,54 @@ app.post('/api/lead-consignacao', async (req, res) => {
     return res.status(400).json({ error: 'Quilometragem inválida.' });
   }
 
-  // Nomes EXATOS validados via curl. Hífens onde tem hífen, sem separador nos utm*.
-  // tipo-de-conversao-21 / origem-do-negocio-21 / tipo-de-veiculo2 são as
-  // properties de segmentação RVops no Contato (sufixos -21/2 são parte do nome).
-  const properties = {
-    firstname,
-    email,
-    phone,
-    'marca-do-veiculo': marca,
-    'modelo-do-veiculo': modelo,
-    'ano-de-fabricacaomodelo': String(anoInt),
-    quilometragem: String(kmInt),
-    lp_origem: RVOPS_LP_ORIGEM,
-    'tipo-de-conversao-21': '-consignado',
-    'origem-do-negocio-21': '-site',
-    'tipo-de-veiculo2': 'carro-4'
+  // observacoes = texto livre persistido e visível pro consultor. É onde vão os
+  // campos sem coluna dedicada: as UTMs e (por segurança) a quilometragem — o
+  // CRM pode não ter coluna de km. Uma info por linha, com rótulo em PT.
+  // TODO: confirmar com o dev se km tem campo dedicado; se tiver, sai daqui.
+  const obs = [];
+  obs.push(`Quilometragem: ${kmInt} km`);
+  const utmLabels = {
+    utm_source: 'UTM Source',
+    utm_medium: 'UTM Medium',
+    utm_campaign: 'UTM Campaign',
+    utm_content: 'UTM Content',
+    utm_term: 'UTM Term'
   };
-
-  // Mapa UTM: front manda com underscore (utm_source), RVops espera sem
-  // separador (utmsource). Vazios são omitidos pra não apagar valor existente.
-  const utmMap = {
-    utm_source: 'utmsource',
-    utm_medium: 'utmmedium',
-    utm_campaign: 'utmcampaign',
-    utm_content: 'utmcontent',
-    utm_term: 'utmterm'
-  };
-  for (const [from, to] of Object.entries(utmMap)) {
+  for (const [from, label] of Object.entries(utmLabels)) {
     const v = sanitize(body[from]);
-    if (v) properties[to] = v;
+    if (v) obs.push(`${label}: ${v}`);
   }
 
-  const url = `https://app.rvops.com/${encodeURIComponent(RVOPS_CLIENT_ID)}/api/v1/contacts`;
+  // Contrato leads-ingest: campos numéricos descartam string (ano/km vão como
+  // Number — "2022" com aspas é ignorado silenciosamente pelo CRM); whatsapp só
+  // dígitos com prefixo 55; origem é fixada pela API key. marca/modelo/ano são
+  // o carro da consignação (ativo, não veículo de troca). quilometragem mandada
+  // como número: se houver coluna dedicada o CRM usa, senão ignora (fica em obs).
+  // Chaves vazias são omitidas via spread condicional.
+  const leadPayload = {
+    nome_completo: nome,
+    email,
+    whatsapp: phone,
+    marca,
+    modelo,
+    ano: anoInt,
+    quilometragem: kmInt,
+    tipo_conversao: TIPO_CONVERSAO,
+    ...(obs.length ? { observacoes: obs.join('\n') } : {})
+  };
 
   const ctrl = new AbortController();
   const timeout = setTimeout(() => ctrl.abort(), 12000);
 
   let upstream;
   try {
-    upstream = await fetch(url, {
+    upstream = await fetch(KCRM_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'rvops-apikey': RVOPS_API_KEY
+        'x-api-key': KCRM_API_KEY
       },
-      body: JSON.stringify({ properties }),
+      body: JSON.stringify(leadPayload),
       signal: ctrl.signal
     });
   } catch (e) {
@@ -167,9 +168,8 @@ app.post('/api/lead-consignacao', async (req, res) => {
     const aborted = e && e.name === 'AbortError';
 
     if (aborted) {
-      // Timeout do nosso lado, mas o RVops provavelmente processou.
-      // Retorna sucesso otimista — se falhou de verdade, o lead se perde
-      // (raro com timeout de 12s); se o usuário retentar, 409 = sucesso.
+      // Timeout do nosso lado, mas o CRM provavelmente processou. Sucesso
+      // otimista — evita o usuário reenviar e duplicar o lead.
       console.warn('[lead-consignacao] upstream timeout — assuming success', {
         email,
         phone
@@ -188,103 +188,26 @@ app.post('/api/lead-consignacao', async (req, res) => {
   clearTimeout(timeout);
 
   let upstreamBody = null;
-  try { upstreamBody = await upstream.json(); } catch (_) { /* RVops pode devolver não-JSON em erro */ }
+  try { upstreamBody = await upstream.json(); } catch (_) { /* CRM pode devolver não-JSON em erro */ }
 
-  // 409 = duplicado: email OU phone já existe (ambos são identificadores únicos).
-  if (upstream.status === 409) {
-    console.info('[lead-consignacao] lead recorrente (409 ConflictError)', {
-      email,
-      phone,
-      marca,
-      modelo,
-      message: upstreamBody && upstreamBody.message
-    });
-    return res.status(200).json({ ok: true, recurring: true });
-  }
-
+  // Sucesso: 201 com { success, contact_id, deal_id }.
   if (upstream.status >= 200 && upstream.status < 300) {
-    const contactId = upstreamBody && upstreamBody.id;
     console.info('[lead-consignacao] created', {
-      id: contactId,
+      contact_id: upstreamBody && upstreamBody.contact_id,
+      deal_id: upstreamBody && upstreamBody.deal_id,
       email
     });
-
-    // Cria Negócio associado ao Contato. Falha aqui NÃO propaga erro pro
-    // usuário — o lead já está no CRM. Logamos pra reconciliação manual.
-    const vehicleParts = [marca, modelo, String(anoInt)].filter(Boolean).join(' ').trim();
-    const dealName = vehicleParts ? `${firstname} - ${vehicleParts}` : firstname;
-    const dealProperties = {
-      name: dealName,
-      pipeline_id: RVOPS_PIPELINE_ID,
-      stage_id: RVOPS_STAGE_ID,
-      'tipo-de-conversao-20': '-consignado',
-      'origem-do-negocio-20': '-site',
-      'tipo-de-veiculo1': 'carro',
-      marca_do_veiculo: marca,
-      form_consignado__modelo_do_veiculo: modelo,
-      ano_do_modelo_fabricacao: String(anoInt),
-      km: String(kmInt)
-    };
-
-    const dealUrl = `https://app.rvops.com/${encodeURIComponent(RVOPS_CLIENT_ID)}/api/v1/deals`;
-    const dealCtrl = new AbortController();
-    const dealTimeout = setTimeout(() => dealCtrl.abort(), 12000);
-
-    let dealUpstream;
-    try {
-      dealUpstream = await fetch(dealUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'rvops-apikey': RVOPS_API_KEY
-        },
-        body: JSON.stringify({
-          properties: dealProperties,
-          associations: { contacts: [contactId] }
-        }),
-        signal: dealCtrl.signal
-      });
-    } catch (e) {
-      clearTimeout(dealTimeout);
-      const aborted = e && e.name === 'AbortError';
-      console.error('[lead-consignacao] deal creation failed', {
-        contactId,
-        aborted,
-        message: e && e.message,
-        sentDealProperties: dealProperties
-      });
-      return res.status(200).json({ ok: true, dealCreationFailed: true });
-    }
-    clearTimeout(dealTimeout);
-
-    let dealBody = null;
-    try { dealBody = await dealUpstream.json(); } catch (_) { /* RVops pode devolver não-JSON em erro */ }
-
-    if (dealUpstream.status >= 200 && dealUpstream.status < 300) {
-      console.info('[lead-consignacao] deal created', {
-        dealId: dealBody && dealBody.id,
-        contactId
-      });
-      return res.status(200).json({ ok: true });
-    }
-
-    console.error('[lead-consignacao] deal creation failed', {
-      contactId,
-      dealStatus: dealUpstream.status,
-      dealBody,
-      sentDealProperties: dealProperties
-    });
-    return res.status(200).json({ ok: true, dealCreationFailed: true });
+    return res.status(200).json({ ok: true });
   }
 
-  // Erro upstream — log detalhado pro server (inclui body enviado pra debug).
-  // API key NUNCA aparece no response.
+  // Erro upstream — log detalhado pro server (inclui payload pra debug).
+  // A x-api-key NUNCA aparece no response.
   console.error('[lead-consignacao] upstream error', {
     status: upstream.status,
     upstreamBody,
     email,
     phone,
-    sentProperties: properties
+    sentPayload: leadPayload
   });
   return res.status(502).json({ error: 'Não conseguimos registrar agora, tente novamente.' });
 });

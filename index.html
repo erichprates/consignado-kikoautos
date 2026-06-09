@@ -2664,8 +2664,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
       // Safety net: se algo travar a UI (bug AbortController iOS Safari, hang
       // em algum await, etc), força o redirect após 40s. O lead provavelmente
-      // já foi processado pelo servidor — caso de duplicado é tratado como
-      // sucesso (server.js retorna 200 ok recurring no 409 do RVops).
+      // já foi processado pelo servidor — em timeout o server retorna 200 ok
+      // deferred (sucesso otimista), então o redirect não perde o lead.
       const safetyRedirect = setTimeout(() => { window.location.href = '/obrigado'; }, 40000);
 
       try {
