@@ -143,10 +143,15 @@ app.post('/api/lead-consignacao', async (req, res) => {
   // pegadinha conhecida) — quando o dev confirmar as keys, dá pra tirar de lá.
   // quilometragem mandada como número: se houver coluna dedicada o CRM usa.
   // Chaves vazias são omitidas via spread condicional.
+  // O booleano de "tem veículo" é o que ATIVA os campos dedicados no CRM (sem
+  // ele o carro só cai em observacoes). Na consignação é sempre true. O dev
+  // mandou dois nomes pro flag — enviamos os dois (o CRM ignora o que não usa).
   const leadPayload = {
     nome_completo: nome,
     email,
     whatsapp: phone,
+    tem_veiculo_troca: true,
+    possui_carro_troca: true,
     marca_veiculo_troca: marca,
     modelo_veiculo_troca: modelo,
     ano_veiculo_troca: anoInt,
