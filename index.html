@@ -1478,7 +1478,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <div>
             <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
               <span class="mono" style="font-size:10px;letter-spacing:0.14em;color:var(--red);font-weight:500;">KIKOAUTOS</span>
-              <span id="compKikoFmt" style="font-size:14px;font-weight:500;color:var(--ink);letter-spacing:-0.01em;font-variant-numeric:tabular-nums;">R$ 95k<span style="color:var(--ink-4);font-size:11px;margin-left:4px;">(líquido)</span></span>
+              <span id="compKikoFmt" style="font-size:14px;font-weight:500;color:var(--ink);letter-spacing:-0.01em;font-variant-numeric:tabular-nums;">R$ 94,6k<span style="color:var(--ink-4);font-size:11px;margin-left:4px;">(líquido)</span></span>
             </div>
             <div class="comp-bar-track">
               <div id="compKikoBar" class="comp-bar-fill kiko" style="width:0%;"></div>
@@ -1790,7 +1790,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <span class="faq-icon" aria-hidden="true"></span>
         </summary>
         <div class="faq-a">
-          <p>A gente conversa. Os critérios (ano 2020+, até 40k km, documentação em dia, sem sinistro) são uma régua de qualidade — mas a maioria dos casos fora da régua tem saída: ajuste de preço, avaliação caso a caso ou direcionamento pro canal certo. Manda o seu carro que a gente avalia.</p>
+          <p>A gente conversa. Os critérios (ano 2020+, até 50.000 km, documentação em dia, sem sinistro) são uma régua de qualidade — mas a maioria dos casos fora da régua tem saída: ajuste de preço, avaliação caso a caso ou direcionamento pro canal certo. Manda o seu carro que a gente avalia.</p>
         </div>
       </details>
 
@@ -1855,7 +1855,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <div id="formError" role="alert" style="display:none;padding:14px 16px;background:rgba(160,24,24,0.08);border:1px solid rgba(160,24,24,0.25);border-radius:10px;font-size:13px;color:var(--red);margin-bottom:1.25rem;"></div>
           <button id="lf-submit" type="submit" class="btn btn-red" style="width:100%;padding:18px 24px;font-size:15px;justify-content:center;">Quero avaliar meu carro <span class="arrow">→</span></button>
           <div style="margin-top:1.5rem;display:flex;gap:1.5rem;flex-wrap:wrap;justify-content:center;">
-            <div class="mono" style="font-size:10px;letter-spacing:0.12em;color:var(--ink-4);text-transform:uppercase;display:flex;align-items:center;gap:6px;"><span style="color:var(--red);">—</span>Sem custo antecipado</div>
+            <div class="mono" style="font-size:10px;letter-spacing:0.12em;color:var(--ink-4);text-transform:uppercase;display:flex;align-items:center;gap:6px;"><span style="color:var(--red);">—</span>Ativação única de R$ 400</div>
             <div class="mono" style="font-size:10px;letter-spacing:0.12em;color:var(--ink-4);text-transform:uppercase;display:flex;align-items:center;gap:6px;"><span style="color:var(--red);">—</span>Resposta em até 24h</div>
             <div class="mono" style="font-size:10px;letter-spacing:0.12em;color:var(--ink-4);text-transform:uppercase;display:flex;align-items:center;gap:6px;"><span style="color:var(--red);">—</span>Você sugere o preço</div>
           </div>
@@ -2441,6 +2441,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
     const PERDA = 0.18;
     const COMISSAO = 0.05;
+    const ATIVACAO = 400;
     let animated = false;
 
     function fmtFull(n) { return 'R$ ' + n.toLocaleString('pt-BR'); }
@@ -2459,7 +2460,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     function update() {
       const valor = Number(slider.value);
       const concess = Math.round(valor * (1 - PERDA));
-      const kiko = Math.round(valor * (1 - COMISSAO));
+      const kiko = Math.round(valor * (1 - COMISSAO)) - ATIVACAO;
       const delta = kiko - concess;
       const maxVal = Math.max(concess, kiko);
 
